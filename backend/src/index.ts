@@ -35,7 +35,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/', apiRateLimiter);
 
 // Health check
-app.get('/health', (req, res) => {
+app.get('/health', (_req, res) => {
   res.json({
     success: true,
     message: 'Synergy HRMS API is running',
