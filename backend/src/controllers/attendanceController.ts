@@ -1,80 +1,50 @@
 import { Request, Response } from 'express';
-import prisma from '../config/database';
+import { mockDatabase, findUserById, generateId } from '../data/mockData';
 import { sendSuccess, sendError } from '../utils/response';
 
 export const checkIn = async (req: Request, res: Response) => {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user!.userId },
-    });
-
-    if (!user || !user.employeeId) {
-      return sendError(res, 'Employee not found', 404);
+    const user = findUserById(req.user!.userId);
+    if (!user) {
+      return sendError(res, 'User not found', 404);
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = new Date().toISOString().split('T')[0];
+    const existing = mockDatabase.attendance.find(
+      (a) => a.employeeId === user.employeeId && a.date === today
+    );
 
-    const existingAttendance = await prisma.attendance.findUnique({
-      where: {
-        employeeId_date: {
-          employeeId: user.employeeId,
-          date: today,
-        },
-      },
-    });
-
-    if (existingAttendance && existingAttendance.checkIn) {
+    if (existing && existing.checkIn) {
       return sendError(res, 'Already checked in for today', 400);
     }
 
-    const attendance = await prisma.attendance.upsert({
-      where: {
-        employeeId_date: {
-          employeeId: user.employeeId,
-          date: today,
-        },
-      },
-      update: {
-        checkIn: new Date(),
-        status: 'PRESENT',
-      },
-      create: {
-        employeeId: user.employeeId,
-        date: today,
-        checkIn: new Date(),
-        status: 'PRESENT',
-      },
-    });
+    const attendance = {
+      id: generateId(),
+      employeeId: user.employeeId,
+      date: today,
+      checkIn: new Date().toISOString(),
+      status: 'PRESENT' as const,
+    };
+
+    mockDatabase.attendance.push(attendance);
 
     sendSuccess(res, attendance, 'Checked in successfully');
   } catch (error) {
-    console.error('Check-in error:', error);
     sendError(res, 'Failed to check in', 500);
   }
 };
 
 export const checkOut = async (req: Request, res: Response) => {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user!.userId },
-    });
-
-    if (!user || !user.employeeId) {
-      return sendError(res, 'Employee not found', 404);
+    const user = findUserById(req.user!.userId);
+    if (!user) {
+      return sendError(res, 'User not found', 404);
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const attendance = await prisma.attendance.findUnique({
-      where: {
-        employeeId_date: {
-          employeeId: user.employeeId,
-          date: today,
-        },
-      },
-    });
+    const today = new Date().toISOString().split('T')[0];
+    const attendance = mockDatabase.attendance.find(
+      (a) => a.employeeId === user.employeeId && a.date === today
+    );
 
     if (!attendance || !attendance.checkIn) {
       return sendError(res, 'No check-in record found for today', 400);
@@ -84,142 +54,62 @@ export const checkOut = async (req: Request, res: Response) => {
       return sendError(res, 'Already checked out for today', 400);
     }
 
-    const checkOutTime = new Date();
-    const workHours = (checkOutTime.getTime() - attendance.checkIn.getTime()) / (1000 * 60 * 60);
+    attendance.checkOut = new Date().toISOString();
+    const workHours =
+      (new Date(attendance.checkOut).getTime() - new Date(attendance.checkIn).getTime()) /
+      (1000 * 60 * 60);
+    attendance.workHours = Math.round(workHours * 100) / 100;
 
-    const updatedAttendance = await prisma.attendance.update({
-      where: {
-        employeeId_date: {
-          employeeId: user.employeeId,
-          date: today,
-        },
-      },
-      data: {
-        checkOut: checkOutTime,
-        workHours: Math.round(workHours * 100) / 100,
-      },
-    });
-
-    sendSuccess(res, updatedAttendance, 'Checked out successfully');
+    sendSuccess(res, attendance, 'Checked out successfully');
   } catch (error) {
-    console.error('Check-out error:', error);
     sendError(res, 'Failed to check out', 500);
   }
 };
 
 export const getMyAttendance = async (req: Request, res: Response) => {
   try {
-    const { startDate, endDate } = req.query;
-
-    const user = await prisma.user.findUnique({
-      where: { id: req.user!.userId },
-    });
-
-    if (!user || !user.employeeId) {
-      return sendError(res, 'Employee not found', 404);
+    const user = findUserById(req.user!.userId);
+    if (!user) {
+      return sendError(res, 'User not found', 404);
     }
 
-    const where: any = {
-      employeeId: user.employeeId,
-    };
-
-    if (startDate && endDate) {
-      where.date = {
-        gte: new Date(startDate as string),
-        lte: new Date(endDate as string),
-      };
-    }
-
-    const attendance = await prisma.attendance.findMany({
-      where,
-      orderBy: { date: 'desc' },
-      take: 30,
-    });
+    const attendance = mockDatabase.attendance
+      .filter((a) => a.employeeId === user.employeeId)
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 30);
 
     sendSuccess(res, attendance, 'Attendance records retrieved successfully');
   } catch (error) {
-    console.error('Get attendance error:', error);
     sendError(res, 'Failed to get attendance records', 500);
   }
 };
 
 export const getAllAttendance = async (req: Request, res: Response) => {
   try {
-    const { date, department } = req.query;
-
-    const where: any = {
-      employee: {
-        companyId: req.user!.companyId,
-      },
-    };
-
-    if (date) {
-      const searchDate = new Date(date as string);
-      searchDate.setHours(0, 0, 0, 0);
-      where.date = searchDate;
-    }
-
-    if (department) {
-      where.employee.departmentId = department;
-    }
-
-    const attendance = await prisma.attendance.findMany({
-      where,
-      orderBy: { date: 'desc' },
-      include: {
-        employee: {
-          include: {
-            department: true,
-          },
-        },
-      },
-      take: 100,
-    });
-
-    sendSuccess(res, attendance, 'Attendance records retrieved successfully');
+    sendSuccess(res, mockDatabase.attendance, 'Attendance records retrieved successfully');
   } catch (error) {
-    console.error('Get all attendance error:', error);
     sendError(res, 'Failed to get attendance records', 500);
   }
 };
 
 export const getTodayStats = async (req: Request, res: Response) => {
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const totalEmployees = await prisma.employee.count({
-      where: {
-        companyId: req.user!.companyId,
-        isActive: true,
-      },
-    });
-
-    const presentCount = await prisma.attendance.count({
-      where: {
-        date: today,
-        status: 'PRESENT',
-        employee: {
-          companyId: req.user!.companyId,
-        },
-      },
-    });
-
-    const absentCount = totalEmployees - presentCount;
-    const attendancePercentage = totalEmployees > 0 ? (presentCount / totalEmployees) * 100 : 0;
+    const today = new Date().toISOString().split('T')[0];
+    const totalEmployees = mockDatabase.employees.filter((e) => e.isActive).length;
+    const presentCount = mockDatabase.attendance.filter((a) => a.date === today && a.status === 'PRESENT').length;
+    const percentage = totalEmployees > 0 ? (presentCount / totalEmployees) * 100 : 0;
 
     sendSuccess(
       res,
       {
         total: totalEmployees,
         present: presentCount,
-        absent: absentCount,
-        percentage: Math.round(attendancePercentage * 100) / 100,
+        absent: totalEmployees - presentCount,
+        percentage: Math.round(percentage * 100) / 100,
       },
-      'Today\'s attendance stats retrieved successfully'
+      "Today's attendance stats retrieved successfully"
     );
   } catch (error) {
-    console.error('Get today stats error:', error);
     sendError(res, 'Failed to get attendance stats', 500);
   }
 };
