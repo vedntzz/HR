@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import '../types/express';
 import { mockDatabase, findUserById, generateId } from '../data/mockData';
 import { sendSuccess, sendError } from '../utils/response';
 
