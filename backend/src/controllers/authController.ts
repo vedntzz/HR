@@ -1,16 +1,17 @@
 import { Request, Response } from 'express';
-import { mockDatabase, findUserByEmail, findUserById, findEmployeeById, findDepartmentById } from '../data/mockData';
+import { findUserByEmail, findUserById, findEmployeeById, findDepartmentById } from '../data/mockData';
 import { generateToken } from '../utils/jwt';
 import { sendSuccess, sendError } from '../utils/response';
 
-export const login = async (req: Request, res: Response) => {
+export const login = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body;
 
     const user = findUserByEmail(email);
 
     if (!user || !user.isActive) {
-      return sendError(res, 'Invalid credentials', 401);
+      sendError(res, 'Invalid credentials', 401);
+      return;
     }
 
     // For demo: accept both hashed and plain passwords
@@ -19,7 +20,8 @@ export const login = async (req: Request, res: Response) => {
       password === 'employee123' && email === 'vedant.ghodke@synergytechnofin.com';
 
     if (!isPasswordValid) {
-      return sendError(res, 'Invalid credentials', 401);
+      sendError(res, 'Invalid credentials', 401);
+      return;
     }
 
     const token = generateToken({
@@ -45,7 +47,7 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
-export const register = async (req: Request, res: Response) => {
+export const register = async (_req: Request, res: Response): Promise<void> => {
   try {
     sendError(res, 'Registration disabled in demo mode', 400);
   } catch (error) {
@@ -53,12 +55,13 @@ export const register = async (req: Request, res: Response) => {
   }
 };
 
-export const getProfile = async (req: Request, res: Response) => {
+export const getProfile = async (req: Request, res: Response): Promise<void> => {
   try {
     const user = findUserById(req.user!.userId);
 
     if (!user) {
-      return sendError(res, 'User not found', 404);
+      sendError(res, 'User not found', 404);
+      return;
     }
 
     const employee = findEmployeeById(user.employeeId);
@@ -77,18 +80,20 @@ export const getProfile = async (req: Request, res: Response) => {
   }
 };
 
-export const updateProfile = async (req: Request, res: Response) => {
+export const updateProfile = async (req: Request, res: Response): Promise<void> => {
   try {
     const { phone, address, city, state, zipCode, country } = req.body;
 
     const user = findUserById(req.user!.userId);
     if (!user) {
-      return sendError(res, 'User not found', 404);
+      sendError(res, 'User not found', 404);
+      return;
     }
 
     const employee = findEmployeeById(user.employeeId);
     if (!employee) {
-      return sendError(res, 'Employee not found', 404);
+      sendError(res, 'Employee not found', 404);
+      return;
     }
 
     // Update employee data
@@ -103,7 +108,7 @@ export const updateProfile = async (req: Request, res: Response) => {
   }
 };
 
-export const changePassword = async (req: Request, res: Response) => {
+export const changePassword = async (_req: Request, res: Response): Promise<void> => {
   try {
     sendSuccess(res, null, 'Password changed successfully (demo mode)');
   } catch (error) {
