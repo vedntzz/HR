@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import '../types/express';
 import prisma from '../config/database';
 
 export const auditLog = (action: string, entity: string) => {

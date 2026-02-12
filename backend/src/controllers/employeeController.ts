@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { mockDatabase, findDepartmentById } from '../data/mockData';
 import { sendSuccess, sendError } from '../utils/response';
 
-export const getAllEmployees = async (req: Request, res: Response) => {
+export const getAllEmployees = async (_req: Request, res: Response): Promise<void> => {
   try {
     const employees = mockDatabase.employees.map((emp) => {
       const department = findDepartmentById(emp.departmentId);
@@ -27,13 +27,14 @@ export const getAllEmployees = async (req: Request, res: Response) => {
   }
 };
 
-export const getEmployeeById = async (req: Request, res: Response) => {
+export const getEmployeeById = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const employee = mockDatabase.employees.find((e) => e.id === id);
 
     if (!employee) {
-      return sendError(res, 'Employee not found', 404);
+      sendError(res, 'Employee not found', 404);
+      return;
     }
 
     const department = findDepartmentById(employee.departmentId);
@@ -60,7 +61,7 @@ export const getEmployeeById = async (req: Request, res: Response) => {
   }
 };
 
-export const createEmployee = async (req: Request, res: Response) => {
+export const createEmployee = async (_req: Request, res: Response): Promise<void> => {
   try {
     sendError(res, 'Employee creation disabled in demo mode', 400);
   } catch (error) {
@@ -68,7 +69,7 @@ export const createEmployee = async (req: Request, res: Response) => {
   }
 };
 
-export const updateEmployee = async (req: Request, res: Response) => {
+export const updateEmployee = async (_req: Request, res: Response): Promise<void> => {
   try {
     sendError(res, 'Employee update disabled in demo mode', 400);
   } catch (error) {
@@ -76,7 +77,7 @@ export const updateEmployee = async (req: Request, res: Response) => {
   }
 };
 
-export const deleteEmployee = async (req: Request, res: Response) => {
+export const deleteEmployee = async (_req: Request, res: Response): Promise<void> => {
   try {
     sendError(res, 'Employee deletion disabled in demo mode', 400);
   } catch (error) {
@@ -84,7 +85,7 @@ export const deleteEmployee = async (req: Request, res: Response) => {
   }
 };
 
-export const getDepartments = async (req: Request, res: Response) => {
+export const getDepartments = async (_req: Request, res: Response): Promise<void> => {
   try {
     const departments = mockDatabase.departments.map((dept) => ({
       ...dept,

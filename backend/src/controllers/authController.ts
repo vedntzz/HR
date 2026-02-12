@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import '../types/express';
 import { findUserByEmail, findUserById, findEmployeeById, findDepartmentById } from '../data/mockData';
 import { generateToken } from '../utils/jwt';
 import { sendSuccess, sendError } from '../utils/response';

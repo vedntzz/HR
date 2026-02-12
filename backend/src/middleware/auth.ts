@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import '../types/express';
 import { verifyToken } from '../utils/jwt';
 import { sendError } from '../utils/response';
 

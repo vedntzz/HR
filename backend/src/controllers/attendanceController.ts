@@ -1,12 +1,14 @@
 import { Request, Response } from 'express';
+import '../types/express';
 import { mockDatabase, findUserById, generateId } from '../data/mockData';
 import { sendSuccess, sendError } from '../utils/response';
 
-export const checkIn = async (req: Request, res: Response) => {
+export const checkIn = async (req: Request, res: Response): Promise<void> => {
   try {
     const user = findUserById(req.user!.userId);
     if (!user) {
-      return sendError(res, 'User not found', 404);
+      sendError(res, 'User not found', 404);
+      return;
     }
 
     const today = new Date().toISOString().split('T')[0];
@@ -15,7 +17,8 @@ export const checkIn = async (req: Request, res: Response) => {
     );
 
     if (existing && existing.checkIn) {
-      return sendError(res, 'Already checked in for today', 400);
+      sendError(res, 'Already checked in for today', 400);
+      return;
     }
 
     const attendance = {
@@ -34,11 +37,12 @@ export const checkIn = async (req: Request, res: Response) => {
   }
 };
 
-export const checkOut = async (req: Request, res: Response) => {
+export const checkOut = async (req: Request, res: Response): Promise<void> => {
   try {
     const user = findUserById(req.user!.userId);
     if (!user) {
-      return sendError(res, 'User not found', 404);
+      sendError(res, 'User not found', 404);
+      return;
     }
 
     const today = new Date().toISOString().split('T')[0];
@@ -47,11 +51,13 @@ export const checkOut = async (req: Request, res: Response) => {
     );
 
     if (!attendance || !attendance.checkIn) {
-      return sendError(res, 'No check-in record found for today', 400);
+      sendError(res, 'No check-in record found for today', 400);
+      return;
     }
 
     if (attendance.checkOut) {
-      return sendError(res, 'Already checked out for today', 400);
+      sendError(res, 'Already checked out for today', 400);
+      return;
     }
 
     attendance.checkOut = new Date().toISOString();
@@ -66,11 +72,12 @@ export const checkOut = async (req: Request, res: Response) => {
   }
 };
 
-export const getMyAttendance = async (req: Request, res: Response) => {
+export const getMyAttendance = async (req: Request, res: Response): Promise<void> => {
   try {
     const user = findUserById(req.user!.userId);
     if (!user) {
-      return sendError(res, 'User not found', 404);
+      sendError(res, 'User not found', 404);
+      return;
     }
 
     const attendance = mockDatabase.attendance
@@ -84,7 +91,7 @@ export const getMyAttendance = async (req: Request, res: Response) => {
   }
 };
 
-export const getAllAttendance = async (req: Request, res: Response) => {
+export const getAllAttendance = async (_req: Request, res: Response): Promise<void> => {
   try {
     sendSuccess(res, mockDatabase.attendance, 'Attendance records retrieved successfully');
   } catch (error) {
@@ -92,7 +99,7 @@ export const getAllAttendance = async (req: Request, res: Response) => {
   }
 };
 
-export const getTodayStats = async (req: Request, res: Response) => {
+export const getTodayStats = async (_req: Request, res: Response): Promise<void> => {
   try {
     const today = new Date().toISOString().split('T')[0];
     const totalEmployees = mockDatabase.employees.filter((e) => e.isActive).length;

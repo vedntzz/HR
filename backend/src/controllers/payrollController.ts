@@ -1,12 +1,14 @@
 import { Request, Response } from 'express';
+import '../types/express';
 import { findUserById } from '../data/mockData';
 import { sendSuccess, sendError } from '../utils/response';
 
-export const getMyPayslips = async (req: Request, res: Response) => {
+export const getMyPayslips = async (req: Request, res: Response): Promise<void> => {
   try {
     const user = findUserById(req.user!.userId);
     if (!user) {
-      return sendError(res, 'User not found', 404);
+      sendError(res, 'User not found', 404);
+      return;
     }
 
     // Mock payslip data
@@ -31,7 +33,7 @@ export const getMyPayslips = async (req: Request, res: Response) => {
   }
 };
 
-export const getPayslipById = async (req: Request, res: Response) => {
+export const getPayslipById = async (_req: Request, res: Response): Promise<void> => {
   try {
     sendSuccess(res, {}, 'Payslip retrieved successfully');
   } catch (error) {
@@ -39,7 +41,7 @@ export const getPayslipById = async (req: Request, res: Response) => {
   }
 };
 
-export const getAllPayrolls = async (req: Request, res: Response) => {
+export const getAllPayrolls = async (_req: Request, res: Response): Promise<void> => {
   try {
     sendSuccess(res, [], 'Payrolls retrieved successfully');
   } catch (error) {
@@ -47,7 +49,7 @@ export const getAllPayrolls = async (req: Request, res: Response) => {
   }
 };
 
-export const generatePayroll = async (req: Request, res: Response) => {
+export const generatePayroll = async (_req: Request, res: Response): Promise<void> => {
   try {
     sendError(res, 'Payroll generation disabled in demo mode', 400);
   } catch (error) {
@@ -55,7 +57,7 @@ export const generatePayroll = async (req: Request, res: Response) => {
   }
 };
 
-export const processPayroll = async (req: Request, res: Response) => {
+export const processPayroll = async (_req: Request, res: Response): Promise<void> => {
   try {
     sendError(res, 'Payroll processing disabled in demo mode', 400);
   } catch (error) {

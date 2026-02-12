@@ -1,14 +1,16 @@
 import { Request, Response } from 'express';
+import '../types/express';
 import { mockDatabase, findUserById, findEmployeeById, generateId, findDepartmentById } from '../data/mockData';
 import { sendSuccess, sendError } from '../utils/response';
 
-export const createLeaveRequest = async (req: Request, res: Response) => {
+export const createLeaveRequest = async (req: Request, res: Response): Promise<void> => {
   try {
     const { leaveType, startDate, endDate, reason } = req.body;
 
     const user = findUserById(req.user!.userId);
     if (!user) {
-      return sendError(res, 'User not found', 404);
+      sendError(res, 'User not found', 404);
+      return;
     }
 
     const start = new Date(startDate);
@@ -44,11 +46,12 @@ export const createLeaveRequest = async (req: Request, res: Response) => {
   }
 };
 
-export const getMyLeaveRequests = async (req: Request, res: Response) => {
+export const getMyLeaveRequests = async (req: Request, res: Response): Promise<void> => {
   try {
     const user = findUserById(req.user!.userId);
     if (!user) {
-      return sendError(res, 'User not found', 404);
+      sendError(res, 'User not found', 404);
+      return;
     }
 
     const leaves = mockDatabase.leaveRequests
@@ -73,11 +76,12 @@ export const getMyLeaveRequests = async (req: Request, res: Response) => {
   }
 };
 
-export const getLeaveBalance = async (req: Request, res: Response) => {
+export const getLeaveBalance = async (req: Request, res: Response): Promise<void> => {
   try {
     const user = findUserById(req.user!.userId);
     if (!user) {
-      return sendError(res, 'User not found', 404);
+      sendError(res, 'User not found', 404);
+      return;
     }
 
     const leaveBalance = mockDatabase.leavePolicies.map((policy) => {
@@ -105,7 +109,7 @@ export const getLeaveBalance = async (req: Request, res: Response) => {
   }
 };
 
-export const getAllLeaveRequests = async (req: Request, res: Response) => {
+export const getAllLeaveRequests = async (_req: Request, res: Response): Promise<void> => {
   try {
     const leaves = mockDatabase.leaveRequests.map((leave) => {
       const employee = findEmployeeById(leave.employeeId);
@@ -122,14 +126,15 @@ export const getAllLeaveRequests = async (req: Request, res: Response) => {
   }
 };
 
-export const updateLeaveStatus = async (req: Request, res: Response) => {
+export const updateLeaveStatus = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const { status } = req.body;
 
     const leave = mockDatabase.leaveRequests.find((l) => l.id === id);
     if (!leave) {
-      return sendError(res, 'Leave request not found', 404);
+      sendError(res, 'Leave request not found', 404);
+      return;
     }
 
     leave.status = status;
@@ -147,13 +152,14 @@ export const updateLeaveStatus = async (req: Request, res: Response) => {
   }
 };
 
-export const deleteLeaveRequest = async (req: Request, res: Response) => {
+export const deleteLeaveRequest = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
 
     const index = mockDatabase.leaveRequests.findIndex((l) => l.id === id);
     if (index === -1) {
-      return sendError(res, 'Leave request not found', 404);
+      sendError(res, 'Leave request not found', 404);
+      return;
     }
 
     mockDatabase.leaveRequests.splice(index, 1);
