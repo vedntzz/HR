@@ -2,12 +2,13 @@ import { Request, Response, NextFunction } from 'express';
 import { verifyToken } from '../utils/jwt';
 import { sendError } from '../utils/response';
 
-export const authenticate = (req: Request, res: Response, next: NextFunction) => {
+export const authenticate = (req: Request, res: Response, next: NextFunction): void => {
   try {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return sendError(res, 'No token provided', 401);
+      sendError(res, 'No token provided', 401);
+      return;
     }
 
     const token = authHeader.substring(7);
@@ -16,18 +17,20 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
     req.user = decoded;
     next();
   } catch (error) {
-    return sendError(res, 'Invalid or expired token', 401);
+    sendError(res, 'Invalid or expired token', 401);
   }
 };
 
 export const authorize = (...roles: string[]) => {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
-      return sendError(res, 'Unauthorized', 401);
+      sendError(res, 'Unauthorized', 401);
+      return;
     }
 
     if (!roles.includes(req.user.role)) {
-      return sendError(res, 'Forbidden: Insufficient permissions', 403);
+      sendError(res, 'Forbidden: Insufficient permissions', 403);
+      return;
     }
 
     next();
