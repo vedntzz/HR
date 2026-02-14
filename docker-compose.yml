@@ -1,0 +1,199 @@
+version: '3.9'
+
+services:
+  # ─── Databases ────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: hrflow-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./scripts/init-databases.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ─── API Gateway ──────────────────────────────────────────
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: hrflow-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      NODE_ENV: production
+      AUTH_SERVICE_URL: http://auth-service:3001
+      EMPLOYEE_SERVICE_URL: http://employee-service:3002
+      ATTENDANCE_SERVICE_URL: http://attendance-service:3003
+      PAYROLL_SERVICE_URL: http://payroll-service:3004
+      RECRUITMENT_SERVICE_URL: http://recruitment-service:3005
+      LMS_SERVICE_URL: http://lms-service:3006
+      POLICY_SERVICE_URL: http://policy-service:3007
+      JWT_SECRET: ${JWT_SECRET:-hrflow-production-secret-change-me}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8080}
+    depends_on:
+      - auth-service
+      - employee-service
+      - attendance-service
+      - payroll-service
+      - recruitment-service
+      - lms-service
+      - policy-service
+
+  # ─── Auth Service ─────────────────────────────────────────
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    container_name: hrflow-auth
+    environment:
+      PORT: 3001
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: hrflow_auth
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      JWT_SECRET: ${JWT_SECRET:-hrflow-production-secret-change-me}
+      JWT_EXPIRES_IN: 24h
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ─── Employee Service ─────────────────────────────────────
+  employee-service:
+    build:
+      context: ./services/employee-service
+      dockerfile: Dockerfile
+    container_name: hrflow-employee
+    environment:
+      PORT: 3002
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: hrflow_employee
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      JWT_SECRET: ${JWT_SECRET:-hrflow-production-secret-change-me}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ─── Attendance Service ───────────────────────────────────
+  attendance-service:
+    build:
+      context: ./services/attendance-service
+      dockerfile: Dockerfile
+    container_name: hrflow-attendance
+    environment:
+      PORT: 3003
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: hrflow_attendance
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      JWT_SECRET: ${JWT_SECRET:-hrflow-production-secret-change-me}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ─── Payroll Service ──────────────────────────────────────
+  payroll-service:
+    build:
+      context: ./services/payroll-service
+      dockerfile: Dockerfile
+    container_name: hrflow-payroll
+    environment:
+      PORT: 3004
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: hrflow_payroll
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      JWT_SECRET: ${JWT_SECRET:-hrflow-production-secret-change-me}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ─── Recruitment Service ──────────────────────────────────
+  recruitment-service:
+    build:
+      context: ./services/recruitment-service
+      dockerfile: Dockerfile
+    container_name: hrflow-recruitment
+    environment:
+      PORT: 3005
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: hrflow_recruitment
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      JWT_SECRET: ${JWT_SECRET:-hrflow-production-secret-change-me}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ─── LMS Service ──────────────────────────────────────────
+  lms-service:
+    build:
+      context: ./services/lms-service
+      dockerfile: Dockerfile
+    container_name: hrflow-lms
+    environment:
+      PORT: 3006
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: hrflow_lms
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      JWT_SECRET: ${JWT_SECRET:-hrflow-production-secret-change-me}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ─── Policy Service ───────────────────────────────────────
+  policy-service:
+    build:
+      context: ./services/policy-service
+      dockerfile: Dockerfile
+    container_name: hrflow-policy
+    environment:
+      PORT: 3007
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: hrflow_policy
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      JWT_SECRET: ${JWT_SECRET:-hrflow-production-secret-change-me}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ─── Web Frontend ─────────────────────────────────────────
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: hrflow-web
+    ports:
+      - "8080:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+    depends_on:
+      - api-gateway
+
+volumes:
+  pgdata:
